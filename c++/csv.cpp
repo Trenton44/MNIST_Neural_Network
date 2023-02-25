@@ -2,14 +2,13 @@
 #include <fstream>
 #include <iostream>
 
-double MAX_PIXEL_VALUE = 255.0;
 typedef std::vector<double> Sample;
-std::vector<double> parseCSVLine(std::string &str){
+std::vector<double> parseCSVLine(std::string &str, double normalizer){
     std::vector<double> line;
     std::string tempstr;
-    for(unsigned cursor = 0; cursor <str.length();  cursor++){
+    for(unsigned cursor = 0; cursor <str.length(); cursor++){
         if(str[cursor] == ','){
-            line.push_back((double)atoi(tempstr.c_str()) / MAX_PIXEL_VALUE);
+            line.push_back(std::stod(tempstr) / normalizer);
             tempstr.clear();
         }
         else
@@ -18,7 +17,7 @@ std::vector<double> parseCSVLine(std::string &str){
     return line;
 }
 
-void readCSV(std::vector<Sample> &data, std::string filename){
+void readCSV(std::vector<Sample> &data, std::string filename, double normalizer){
     std::cout << "opening " << filename << std::endl;
     std::fstream file;
     std::string str;
@@ -27,7 +26,7 @@ void readCSV(std::vector<Sample> &data, std::string filename){
     std::cout << "reading dataset into memory." << std::endl;
     unsigned counter = 0;
     while(std::getline(file, str)){
-        data.push_back(parseCSVLine(str));
+        data.push_back(parseCSVLine(str, normalizer));
         str.clear();
         counter += 1;
     }
