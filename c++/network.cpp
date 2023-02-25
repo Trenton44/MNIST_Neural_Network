@@ -21,25 +21,34 @@ void Network::print(){
         layers[i].print();
 };
 
-void Network::train(const std::vector<Sample> &data, const std::vector<double> target_values, const unsigned epochs){
-    std::cout << data.size() << " : " << target_values.size() << std::endl;
+double Network::train(std::string network_save_filename, const std::vector<Sample> &data, const std::vector<double> target_values, const unsigned epochs, const unsigned sample_count = 0){
     assert(data.size() == target_values.size());
     std::vector<double> output_targets;
+    double error_low = 100;
+    double error_current;
     for(unsigned i = 0; i < epochs; i++){
-        std::cout << "Beginning Epoch " << i << std::endl;
-        for(unsigned z = 0; z < data.size(); z++){
-            std::cout << "Sample " << z << std::endl;
+        std::cout << "beginning Epoch " << i << std::endl;
+        unsigned samples_length = sample_count == 0 ? data.size() : sample_count;
+        // std::cout << "Samples to be run: " << samples_length << std::endl;
+        for(unsigned z = 0; z < samples_length; z++){
+            // std::cout << "Sample " << z << std::endl;
             // start forward pass
             forwards(data[z]);
-            // create array of 0.0 values, expect for the target value of the sample, which will be 1.0
+            // create array of 0.0 values, except for th target value of the sample, which will be 1.0
             for(unsigned y = 0; y < data[z].size(); y++)
                 output_targets.push_back(y == target_values[z] ? 1.0 : 0.0);
-
-            backwards(output_targets);
+            
+            error_current = backwards(output_targets);
             output_targets.clear();
-            print();
+            if(error_low - error_current > 0.001){
+                std::cout << "Epoch " << i << ":" << z << " resulted in " << std::scientific << error_current << ". Saving new best to file. " << std::endl;
+                save(network_save_filename);
+                error_low = error_current;
+            }
+            // print()
         }
     }
+    return error_low;
 };
 
 void Network::forwards(const std::vector<double> &data){
@@ -49,20 +58,20 @@ void Network::forwards(const std::vector<double> &data){
         input_layer[i].setOutput(data[i]);
     
     // Begin forward propagation logic
-    std::cout << "Beginning foward propagation.." << std::endl;
-    //start at layer_num = 1 to skip input layer, since it does nothing other than hold input values
+    // std::cout << "Beginning foward propagation.." << std::endl;
+    // start at layer_num = 1 to skip input layer, since it does nothing other than hold input values
     for(unsigned layer_num = 1; layer_num < layers.size(); layer_num++){
-        std::cout << "Layer " << layer_num << std::endl;
+        //std::cout << "Layer " << layer_num << std::endl;
         std::vector<Neuron> &prev_layer = layers[layer_num - 1].getNeurons();
         std::vector<Neuron> &curr_layer = layers[layer_num].getNeurons();
         for(unsigned i = 0; i < curr_layer.size(); i++)
             curr_layer[i].forwards(prev_layer);
     }
-    std::cout << "Completed forward propagation." << std::endl;
+    // std::cout << "Completed forward propagation." << std::endl;
 };
 
-void Network::backwards(const std::vector<double> &target_values){
-    std::cout << "Beginning backwards propagation..." << std::endl;
+double Network::backwards(const std::vector<double> &target_values){
+    //std::cout << "Beginning backwards propagation..." << std::endl;
     std::vector<Neuron> &output_layer = layers.back().getNeurons();
     error = 0.0;
     // Calculate output error for processed sample.
@@ -73,7 +82,7 @@ void Network::backwards(const std::vector<double> &target_values){
 
     error /= output_layer.size();
     error = sqrt(error);
-    std::cout << "Error: " << error << std::endl;
+    // std::cout << "Error: " << error << std::endl;
 
     // calculate the output layer gradient
     for(unsigned i = 0; i < output_layer.size(); i++)
@@ -96,5 +105,93 @@ void Network::backwards(const std::vector<double> &target_values){
             curr_layer[i].updateInputWeights(prev_layer);
     }
 
-    std::cout << "Completed backpropagation." << std::endl;
+    // std::cout << "Completed backpropagation." << std::endl;
+    return error;
 };
+
+bool Network::save(std::string filename){
+    
+    // first row of csv = topology
+    // all remaining rows contain neuron data
+
+    std::cout << "Opening " << filename << std::endl;
+    std::fstream file;
+    file.open(filename, std::fstream::out);
+    std::cout << "Successfully opened " << filename << std::endl;
+    for(unsigned i = 0; i < layers.size(); i++){
+        file << layers[i].getNeurons().size();
+        if(i < layers.size() - 1)
+            file << ", ";
+    }
+    for(unsigned i = 0; i < layers.size(); i++){ 
+        std::vector<Neuron> &curr_layer = layers[i].getNeurons();
+        for(unsigned z = 0; z < curr_layer.size(); z++){
+            file << std::endl;
+            curr_layer[z].save(file); 
+        }
+    }
+    std::cout << "Network data successfully saved to " << filename << std::endl;
+    file.close();
+    return true;
+}
+
+Network Network::load(std::string filename){
+    std::cout << "Opening " << filename << std::endl;
+    std::fstream file;
+    std::string str;
+    std::vector<std::vector<double>> network_data;
+    std::vector<double> line_data;
+    std::string tempstr;
+
+    file.open(filename, std::fstream::in);
+    std::cout << "Successfully opened " << filename << std::endl;
+    while(std::getline(file, str)){
+        for(unsigned cursor = 0; cursor < str.length(); cursor++){
+            if(str[cursor] == ','){
+                line_data.push_back(std::stod(tempstr));
+                tempstr.clear();
+            }
+            else
+                tempstr.push_back(str[cursor]);
+        }
+        // add last value that didn't have a following comma, to data.
+        line_data.push_back(std::stod(tempstr));
+
+        network_data.push_back(line_data);
+        tempstr.clear();
+        line_data.clear();
+        str.clear();
+    }
+    std::cout << "Successfully read file into memory, parsing data..." << std::endl;
+
+    // first line of data should contain topology
+    std::vector<unsigned> topology(network_data[0].begin(), network_data[0].end());
+    Network net(topology);
+    unsigned layer_num = 0;
+    unsigned cursor = 0;
+    for(unsigned sample = 1; sample < network_data.size(); sample++){
+        if(cursor >= net.layers[layer_num].getNeurons().size()){
+            layer_num += 1;
+            cursor = 0;
+        }
+        std::vector<Neuron> &current_layer = net.layers[layer_num].getNeurons();
+        current_layer[cursor].load(network_data[sample]);
+        cursor += 1;
+    }
+    return net;
+};
+
+void Network::predict(const std::vector<double> &data){ forwards(data); }
+
+unsigned Network::results(void){
+    std::vector<Neuron> &output_layer = layers.back().getNeurons();
+    unsigned guess = 0;
+    double max = output_layer[0].getOutput();
+    for(unsigned i = 1; i < output_layer.size(); i++){
+        if(output_layer[i].getOutput() > max){
+            max = output_layer[i].getOutput();
+            guess = i;
+        }
+    }
+    return guess;
+}
