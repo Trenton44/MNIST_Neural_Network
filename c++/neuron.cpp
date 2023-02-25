@@ -71,3 +71,17 @@ double Neuron::sumCostDelta(std::vector<Neuron> &nextLayer) const{
 };
 
 double Neuron::generateWeight(void){ return rand() / double(RAND_MAX); };
+
+void Neuron::load(std::vector<double> &weight_data){
+    output = weight_data[0];
+    for(unsigned i = 0; i < weights.size(); i++){
+        weights[i].weight = weight_data[2*i + 1];
+        weights[i].delta_weight = weight_data[2*i + 2];
+    }
+}
+
+void Neuron::save(std::fstream &file){
+    file << output;
+    for(unsigned i = 0; i < weights.size(); i++)
+        file << ", " << weights[i].weight << ", " << weights[i].delta_weight;
+}

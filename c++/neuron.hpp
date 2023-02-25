@@ -18,6 +18,8 @@ class Neuron {
         void getOutputGradients(double target_value);
         void updateInputWeights(std::vector<Neuron> &prevLayer);
         void getHiddenGradients(std::vector<Neuron> &nextLayer);
+        void load(std::vector<double> &weight_data);
+        void save(std::fstream &file);
         void print();
 
     private:
