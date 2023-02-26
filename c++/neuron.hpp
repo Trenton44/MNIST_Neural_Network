@@ -23,10 +23,11 @@ class Neuron {
         void print();
 
     private:
+        double bias;
         unsigned neuron_id;
         double output;
         double gradient;
-        static double eta;
+        static double learn_rate;
         static double alpha;
         std::vector<Connection> weights;
         static double activation(double x);

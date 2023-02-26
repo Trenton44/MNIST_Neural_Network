@@ -15,11 +15,7 @@ Network::Network(const std::vector<unsigned> &topology){
         layers.push_back(Layer(layer_num, topology[layer_num], layer_num == topology.size() - 1 ? 0 : topology[layer_num + 1]));
 };
 
-void Network::print(){
-    std::cout << "Printing network layout..." << std::endl;
-    for(unsigned i = 1; i< layers.size(); i++)
-        layers[i].print();
-};
+void Network::predict(const std::vector<double> &data){ forwards(data); };
 
 double Network::train(std::string network_save_filename, const std::vector<Sample> &data, const std::vector<double> target_values, const unsigned epochs, const unsigned sample_count = 0){
     assert(data.size() == target_values.size());
@@ -75,16 +71,19 @@ double Network::backwards(const std::vector<double> &target_values){
     std::vector<Neuron> &output_layer = layers.back().getNeurons();
     error = 0.0;
     // Calculate output error for processed sample.
+    // Cost function of node is Mean Squared Error: (expected - actual)^2, which is calculated here
     for(unsigned i = 0; i < output_layer.size(); i++){
-        double delta = target_values[i] - output_layer[i].getOutput();
-        error += delta * delta;
+        double delta = target_values[i] - output_layer[i].getOutput(); // (expected - actual)
+        error += delta * delta; // ^2
     }
 
+    // Cost of the network is the average cost of all output nodes
     error /= output_layer.size();
     error = sqrt(error);
     // std::cout << "Error: " << error << std::endl;
 
     // calculate the output layer gradient
+    // change in cost relative to a node is 
     for(unsigned i = 0; i < output_layer.size(); i++)
         output_layer[i].getOutputGradients(target_values[i]);
     
@@ -97,7 +96,7 @@ double Network::backwards(const std::vector<double> &target_values){
             hidden_layer[i].getHiddenGradients(next_layer);
     }
 
-    // recursively update weights for all layers, (except input layer)
+    // recursively update weights/bias for all layers, (except input layer, since it's not really a layer.)
     for(unsigned layer_num = layers.size() - 1; layer_num > 0; layer_num--){
         std::vector<Neuron> &curr_layer = layers[layer_num].getNeurons();
         std::vector<Neuron> &prev_layer = layers[layer_num - 1].getNeurons();
@@ -110,7 +109,6 @@ double Network::backwards(const std::vector<double> &target_values){
 };
 
 bool Network::save(std::string filename){
-    
     // first row of csv = topology
     // all remaining rows contain neuron data
 
@@ -133,7 +131,7 @@ bool Network::save(std::string filename){
     std::cout << "Network data successfully saved to " << filename << std::endl;
     file.close();
     return true;
-}
+};
 
 Network Network::load(std::string filename){
     std::cout << "Opening " << filename << std::endl;
@@ -181,8 +179,6 @@ Network Network::load(std::string filename){
     return net;
 };
 
-void Network::predict(const std::vector<double> &data){ forwards(data); }
-
 unsigned Network::results(void){
     std::vector<Neuron> &output_layer = layers.back().getNeurons();
     unsigned guess = 0;
@@ -194,4 +190,10 @@ unsigned Network::results(void){
         }
     }
     return guess;
-}
+};
+
+void Network::print(){
+    std::cout << "Printing network layout..." << std::endl;
+    for(unsigned i = 1; i< layers.size(); i++)
+        layers[i].print();
+};

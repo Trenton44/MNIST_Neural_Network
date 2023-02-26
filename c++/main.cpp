@@ -6,7 +6,9 @@
 #include "neuron.cpp"
 #include "layer.cpp"
 #include "network.cpp"
+
 typedef std::vector<double> Sample;
+
 void printVector(std::vector<Sample> &data){
     std::cout << "printing sample data." << std::endl;
     for(unsigned i = 0; i < data.size(); i++) {
