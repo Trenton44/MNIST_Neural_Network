@@ -95,15 +95,16 @@ void Neuron::print(){
 };
 
 void Neuron::save(std::fstream &file){
-    file << output;
+    file << output << ", " << bias;
     for(unsigned i = 0; i < weights.size(); i++)
         file << ", " << weights[i].weight << ", " << weights[i].delta_weight;
 };
 
 void Neuron::load(std::vector<double> &weight_data){
     output = weight_data[0];
+    bias = weight_data[1];
     for(unsigned i = 0; i < weights.size(); i++){
-        weights[i].weight = weight_data[2*i + 1];
-        weights[i].delta_weight = weight_data[2*i + 2];
+        weights[i].weight = weight_data[2*i + 2];
+        weights[i].delta_weight = weight_data[2*i + 3];
     }
 };
