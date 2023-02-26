@@ -39,7 +39,8 @@ unsigned test(std::string network_save_filename, std::string test_data_filename)
         if(result != target_test_values[i])
             t_error += 1;
     }
-    std::cout << "Final result: " << (t_error / test_data.size()) * 100 << std::endl;
+    double accuracy = (t_error / test_data.size()) * 100;
+    std::cout << "Final result: " << accuracy << std::endl;
     return t_error;
 }
 
@@ -63,6 +64,7 @@ double train(std::string network_save_filename, std::string train_data_filename)
     std::cout << "Network state resulting in this value has ben saved to " << network_save_filename << std::endl;
     return error;
 }
+
 int main(){
     std::string network_save_filename = "network_save.csv";
     std::string test_data_filename = "../mnist_test.csv";

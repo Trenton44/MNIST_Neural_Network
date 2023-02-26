@@ -22,9 +22,9 @@ double Network::train(std::string network_save_filename, const std::vector<Sampl
     std::vector<double> output_targets;
     double error_low = 100;
     double error_current;
+    unsigned samples_length = sample_count == 0 ? data.size() : sample_count;
     for(unsigned i = 0; i < epochs; i++){
         std::cout << "beginning Epoch " << i << std::endl;
-        unsigned samples_length = sample_count == 0 ? data.size() : sample_count;
         // std::cout << "Samples to be run: " << samples_length << std::endl;
         for(unsigned z = 0; z < samples_length; z++){
             // std::cout << "Sample " << z << std::endl;
