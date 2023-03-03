@@ -119,7 +119,7 @@ bool Network::save(std::string filename){
     for(unsigned i = 0; i < layers.size(); i++){
         file << layers[i].getNeurons().size();
         if(i < layers.size() - 1)
-            file << ", ";
+            file << ",";
     }
     for(unsigned i = 0; i < layers.size(); i++){ 
         std::vector<Neuron> &curr_layer = layers[i].getNeurons();
@@ -142,7 +142,12 @@ Network Network::load(std::string filename){
     std::string tempstr;
 
     file.open(filename, std::fstream::in);
-    std::cout << "Successfully opened " << filename << std::endl;
+    if(file.good())
+        std::cout << "Successfully opened " << filename << std::endl;
+    else{
+        std::cout << "Unable to open file." << std::endl;
+        throw;
+    }
     while(std::getline(file, str)){
         for(unsigned cursor = 0; cursor < str.length(); cursor++){
             if(str[cursor] == ','){
@@ -160,6 +165,7 @@ Network Network::load(std::string filename){
         line_data.clear();
         str.clear();
     }
+    file.close();
     std::cout << "Successfully read file into memory, parsing data..." << std::endl;
 
     // first line of data should contain topology
